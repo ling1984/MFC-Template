@@ -13,46 +13,15 @@
 #include "afxdialogex.h"
 #include "atlconv.h"
 
+#include "data/nlohmann.json.3.10.5/build/native/include/nlohmann/json.hpp"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+#include <fstream>
 
-
-// CAboutDlg dialog used for App About
-
-//class CAboutDlg : public CDialogEx
-//{
-//public:
-//	CAboutDlg();
-//
-//// Dialog Data
-//#ifdef AFX_DESIGN_TIME
-//	enum { IDD = IDD_ABOUTBOX };
-//#endif
-//
-//	protected:
-//	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-//
-//// Implementation
-//protected:
-//	DECLARE_MESSAGE_MAP()
-//};
-//
-//CAboutDlg::CAboutDlg() : CDialogEx(IDD_ABOUTBOX)
-//{
-//}
-//
-//void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-//{
-//	CDialogEx::DoDataExchange(pDX);
-//}
-//
-//BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
-//END_MESSAGE_MAP()
-
-
-// CMFCTemplateDlg dialog
-
+// json library
+using json = nlohmann::json;
 
 
 CMFCTemplateDlg::CMFCTemplateDlg(CWnd* pParent /*=nullptr*/)
@@ -81,6 +50,7 @@ BEGIN_MESSAGE_MAP(CMFCTemplateDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_RADIO1, &CMFCTemplateDlg::OnBnClickedRadio1)
 	ON_BN_CLICKED(IDC_RADIO2, &CMFCTemplateDlg::OnBnClickedRadio2)
+	ON_BN_CLICKED(IDOK, &CMFCTemplateDlg::OnBnClickedOk)
 END_MESSAGE_MAP()
 
 
@@ -90,87 +60,103 @@ BOOL CMFCTemplateDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-	// Add "About..." menu item to system menu.
-
-	// IDM_ABOUTBOX must be in the system command range.
-	/*ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
-	ASSERT(IDM_ABOUTBOX < 0xF000);
-
-	CMenu* pSysMenu = GetSystemMenu(FALSE);
-	if (pSysMenu != nullptr)
-	{
-		BOOL bNameValid;
-		CString strAboutMenu;
-		bNameValid = strAboutMenu.LoadString(IDS_ABOUTBOX);
-		ASSERT(bNameValid);
-		if (!strAboutMenu.IsEmpty())
-		{
-			pSysMenu->AppendMenu(MF_SEPARATOR);
-			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
-		}
-	}*/
-
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
-	// HERE IS WHERE YOU PUT YOUR onStart/ onInit/ onCreate CODE
 
-	filename = "data\\settings.json";
+
+	// HERE IS WHERE YOU PUT YOUR onStart/ onInit/ onCreate CODE
+	filename = L"data\\settings.json";
 
 	// Reading from file
 	readFromJson();
 
+	return TRUE;  // return TRUE unless you set the focus to a control
+}
+
+std::string convertCStringToString(CString cstring) {
+	CW2A asciiConverter(cstring); // convert CString (wide) to char*
+	std::string str(asciiConverter); // create std::string from char*
+	return str;
+}
+
+CString convertStringToCString(std::string string) {
+	std::wstring wstring(string.begin(), string.end());
+	CString cstring = wstring.c_str();
+	return cstring;
+}
+
+json getJsonConfig(std::wstring filename) {
+	// path to the JSON file
+	std::wstring wstring = filename;
+	LPCWSTR pathConfig = wstring.c_str();
+	// doing a bunch of type conversions
+	std::ifstream ifs_config(pathConfig);
+	std::string content_config((std::istreambuf_iterator<char>(ifs_config)), (std::istreambuf_iterator<char>()));
+	// parsed version of file
+	json myjson_config = json::parse(content_config);
+	return myjson_config;
+}
+
+void setJsonConfig(std::wstring filename, json myjson_config) {
+	std::wstring wstring = filename;
+	LPCWSTR pathConfig = wstring.c_str();
+	std::ofstream outputModesFile(pathConfig);
+	outputModesFile << std::setw(4) << myjson_config << std::endl;
+}
+
+void CMFCTemplateDlg::readFromJson() {
+
+	// parsed version of file
+	json myjson_config = getJsonConfig(filename);
+
+	// setting up for radio button and option selection
+	radioButton1Selected = myjson_config["radioButton1Selected"];
 	// setting up initial states
 	m_radioButton1.SetCheck(radioButton1Selected);
 	m_radioButton2.SetCheck(!radioButton1Selected);
 
-	m_comboBox.SetCurSel(optionSelected);
+	// adding list for drop down menu
+	for (std::string list_element : myjson_config["comboBoxList"]) {
+		m_comboBox.AddString(convertStringToCString(list_element));
+	}
+	// if your list is in the wrong order, check if its sorted (in the dialog editor, not here)
 
+	// setting up initial states
+	m_comboBox.SetCurSel(myjson_config["current_selection"]);
 
-
-	return TRUE;  // return TRUE unless you set the focus to a control
-}
-
-std::string convertToStringFromCString(CString cstring) {
-	CW2A asciiConverter(cstring); // Convert CString (wide) to char*
-	std::string str(asciiConverter); // Create std::string from char*
-	return str;
-}
-
-void CMFCTemplateDlg::readFromJson() {
-	radioButton1Selected = true;
-	optionSelected = 0;
-	// if you list is in the wrong order, check if its sorted 
-	m_comboBox.AddString(_T("list element 1"));
-	m_comboBox.AddString(_T("list element 2"));
-	m_comboBox.AddString(_T("list element 3"));
+	// setting up textEditBox
+	m_textEditBox.SetWindowText(convertStringToCString(myjson_config["textEditText"]));
 
 }
 void CMFCTemplateDlg::writeToJson() {
-	// CString is the MFC type
+
+	// get the current_config json
+	json myjson_config = getJsonConfig(filename);
+
+	// set all the fields
+
+	// radio buttons
+	myjson_config["radioButton1Selected"] = m_radioButton1.GetCheck() == 1;
+
+	// current selection
+	myjson_config["current_selection"] = m_comboBox.GetCurSel();
+
+	// text edit box
 	CString editBoxCString;
 	m_textEditBox.GetWindowText(editBoxCString);
-	// converting to std::string as they are much easier to work with
-	std::string editBoxString = convertToStringFromCString(editBoxCString);
+	myjson_config["textEditText"] = convertCStringToString(editBoxCString);
 
-	radioButton1Selected;
-	optionSelected = m_comboBox.GetCurSel();
+	// write to file
+	setJsonConfig(filename, myjson_config);
 }
 
 
 void CMFCTemplateDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	/*if ((nID & 0xFFF0) == IDM_ABOUTBOX)
-	{
-		CAboutDlg dlgAbout;
-		dlgAbout.DoModal();
-	}
-	else
-	{*/
 	CDialogEx::OnSysCommand(nID, lParam);
-	//}
 }
 
 // If you add a minimize button to your dialog, you will need the code below
@@ -219,7 +205,6 @@ HCURSOR CMFCTemplateDlg::OnQueryDragIcon()
 // The "Group" property determines with what it is a radio button
 void CMFCTemplateDlg::OnBnClickedRadio1()
 {
-	radioButton1Selected = true;
 	// do not need to control setting check on this or the other
 	// handled automatically as they are Radio Buttons
 }
@@ -229,5 +214,13 @@ void CMFCTemplateDlg::OnBnClickedRadio2()
 {
 	// you dont need an onclick for this because you can just check if its checked before you save to json
 	// this is an example to show an onClick function
-	radioButton1Selected = false;
+}
+
+
+void CMFCTemplateDlg::OnBnClickedOk()
+{
+	writeToJson();
+
+	// closes the window
+	CDialogEx::OnOK();
 }

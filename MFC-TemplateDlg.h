@@ -34,7 +34,7 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
-	std::string filename;
+	std::wstring filename;
 	void readFromJson();
 	void writeToJson();
 	afx_msg void OnBnClickedRadio1();
@@ -43,6 +43,6 @@ public:
 	CButton m_radioButton1;
 	CButton m_radioButton2;
 	CEdit m_textEditBox;
-	int optionSelected;
 	CComboBox m_comboBox;
+	afx_msg void OnBnClickedOk();
 };

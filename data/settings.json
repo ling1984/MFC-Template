@@ -1,3 +1,10 @@
 {
-
+    "comboBoxList": [
+        "element 0",
+        "element 1",
+        "element 2"
+    ],
+    "current_selection": 1,
+    "radioButton1Selected": false,
+    "textEditText": "hello worrld"
 }
