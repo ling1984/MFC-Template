@@ -63,12 +63,22 @@ CMFCTemplateDlg::CMFCTemplateDlg(CWnd* pParent /*=nullptr*/)
 void CMFCTemplateDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	// linking the button ids to a control variable
+	DDX_Control(pDX, IDC_RADIO1, m_radioButton1);
+	DDX_Control(pDX, IDC_RADIO2, m_radioButton2);
+	// if you need a large number of buttons with contiguous ids or need to add them to an array
+	// you can make a for loop here
+	// IDs just map to numbers which are 1000 + n for nth button created (started from n=0)
+
+	DDX_Control(pDX, IDC_EDIT1, m_textEditBox);
 }
 
 BEGIN_MESSAGE_MAP(CMFCTemplateDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_RADIO1, &CMFCTemplateDlg::OnBnClickedRadio1)
+	ON_BN_CLICKED(IDC_RADIO2, &CMFCTemplateDlg::OnBnClickedRadio2)
 END_MESSAGE_MAP()
 
 
@@ -103,14 +113,34 @@ BOOL CMFCTemplateDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 	SetIcon(m_hIcon, FALSE);		// Set small icon
 
-	// TODO: Add extra initialization here
+	// HERE IS WHERE YOU PUT YOUR onStart/ onInit/ onCreate CODE
 
+	filename = "data\\settings.json";
 
+	// Reading from file
+	readFromJson();
 
+	// setting up initial states
+	m_radioButton1.SetCheck(radioButton1Selected);
+	m_radioButton2.SetCheck(!radioButton1Selected);
 
 
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
+}
+
+void CMFCTemplateDlg::readFromJson() {
+	radioButton1Selected = true;
+}
+void CMFCTemplateDlg::writeToJson() {
+	// CString is the MFC type
+	CString editBoxCString;
+	m_textEditBox.GetWindowText(editBoxCString);
+	// converting to std::string as they are much easier to work with
+	std::wstring editBoxWStr(editBoxCString);
+	std::string editBoxText(editBoxWStr.begin(), editBoxWStr.end());
+
+	radioButton1Selected;
 }
 
 void CMFCTemplateDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -162,3 +192,23 @@ HCURSOR CMFCTemplateDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+// Radio Button = only one in the group can be selected at once
+// 
+// on Click function for radio button 1
+// referred to by its ID
+// IDC_RADIO1
+// double click on the tool on the Dialog and it will generate an onClick function
+// The "Group" property determines with what it is a radio button
+void CMFCTemplateDlg::OnBnClickedRadio1()
+{
+	radioButton1Selected = true;
+	// do not need to control setting check on this or the other
+	// handled automatically as they are Radio Buttons
+}
+
+
+void CMFCTemplateDlg::OnBnClickedRadio2()
+{
+	radioButton1Selected = false;
+}
