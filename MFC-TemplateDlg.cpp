@@ -11,6 +11,7 @@
 #include "MFC-Template.h"
 #include "MFC-TemplateDlg.h"
 #include "afxdialogex.h"
+#include "atlconv.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -71,6 +72,7 @@ void CMFCTemplateDlg::DoDataExchange(CDataExchange* pDX)
 	// IDs just map to numbers which are 1000 + n for nth button created (started from n=0)
 
 	DDX_Control(pDX, IDC_EDIT1, m_textEditBox);
+	DDX_Control(pDX, IDC_COMBO1, m_comboBox);
 }
 
 BEGIN_MESSAGE_MAP(CMFCTemplateDlg, CDialogEx)
@@ -124,24 +126,39 @@ BOOL CMFCTemplateDlg::OnInitDialog()
 	m_radioButton1.SetCheck(radioButton1Selected);
 	m_radioButton2.SetCheck(!radioButton1Selected);
 
+	m_comboBox.SetCurSel(optionSelected);
 
 
-	return TRUE;  // return TRUE  unless you set the focus to a control
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+}
+
+std::string convertToStringFromCString(CString cstring) {
+	CW2A asciiConverter(cstring); // Convert CString (wide) to char*
+	std::string str(asciiConverter); // Create std::string from char*
+	return str;
 }
 
 void CMFCTemplateDlg::readFromJson() {
 	radioButton1Selected = true;
+	optionSelected = 0;
+	// if you list is in the wrong order, check if its sorted 
+	m_comboBox.AddString(_T("list element 1"));
+	m_comboBox.AddString(_T("list element 2"));
+	m_comboBox.AddString(_T("list element 3"));
+
 }
 void CMFCTemplateDlg::writeToJson() {
 	// CString is the MFC type
 	CString editBoxCString;
 	m_textEditBox.GetWindowText(editBoxCString);
 	// converting to std::string as they are much easier to work with
-	std::wstring editBoxWStr(editBoxCString);
-	std::string editBoxText(editBoxWStr.begin(), editBoxWStr.end());
+	std::string editBoxString = convertToStringFromCString(editBoxCString);
 
 	radioButton1Selected;
+	optionSelected = m_comboBox.GetCurSel();
 }
+
 
 void CMFCTemplateDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
@@ -210,5 +227,7 @@ void CMFCTemplateDlg::OnBnClickedRadio1()
 
 void CMFCTemplateDlg::OnBnClickedRadio2()
 {
+	// you dont need an onclick for this because you can just check if its checked before you save to json
+	// this is an example to show an onClick function
 	radioButton1Selected = false;
 }

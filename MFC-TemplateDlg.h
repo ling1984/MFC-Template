@@ -4,6 +4,7 @@
 
 #pragma once
 #include <string>
+#include <vector>
 
 
 // CMFCTemplateDlg dialog
@@ -42,4 +43,6 @@ public:
 	CButton m_radioButton1;
 	CButton m_radioButton2;
 	CEdit m_textEditBox;
+	int optionSelected;
+	CComboBox m_comboBox;
 };
